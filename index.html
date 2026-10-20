@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leonida City</title>
+<style>
+  :root { --pink:#ff4fa3; --cyan:#7df9ff; --panel:rgba(12,14,24,.88); --gold:#ffd23f; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#0b1140; font-family: 'Segoe UI', system-ui, sans-serif; color:#fff; user-select:none; }
+  #game { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  #hud, #ui { position:fixed; inset:0; pointer-events:none; } #ui { z-index:20; } body:not(.playing) #hud { opacity:0; }
+  .hide { display:none !important; }
+  .screen { position:fixed; inset:0; display:grid; place-items:center; background:radial-gradient(ellipse at center, rgba(20,24,50,.75), rgba(5,7,18,.95)); pointer-events:auto; }
+  .screen.dim { background:rgba(4,6,16,.78); }
+  .screen.wasted { background:rgba(60,0,0,.45); pointer-events:none; } .wasted h1 { font-size:84px; letter-spacing:12px; color:#e53935; text-shadow:0 0 30px #000; }
+  .panel { background:var(--panel); border:1px solid rgba(125,249,255,.35); border-radius:14px; padding:26px 34px; min-width:320px; max-width:min(720px,92vw); max-height:90vh; overflow:auto; box-shadow:0 10px 50px rgba(0,0,0,.6); }
+  .panel.wide { min-width:420px; } .panel h1 { margin:0 0 6px; font-size:40px; letter-spacing:6px; background:linear-gradient(90deg,var(--pink),var(--gold)); -webkit-background-clip:text; color:transparent; }
+  .panel h2 { margin:0 0 14px; letter-spacing:4px; color:var(--cyan); } .sub { margin:0 0 16px; opacity:.7; } .hint { opacity:.6; font-size:13px; margin-top:14px; } .warn { color:#ffb74d; }
+  button { display:block; width:100%; margin:8px 0; padding:11px 16px; font:600 16px inherit; color:#fff; background:rgba(255,79,163,.18); border:1px solid var(--pink); border-radius:8px; cursor:pointer; transition:.15s; }
+  button:hover { background:rgba(255,79,163,.45); transform:translateX(3px); } td button { width:auto; margin:0; padding:6px 12px; font-size:13px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 28px; } .grid label { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:14px; } .grid input[type=range] { width:130px; } select { background:#161a2c; color:#fff; border:1px solid var(--cyan); border-radius:6px; padding:4px; }
+  table.ctl { width:100%; border-collapse:collapse; font-size:14px; } table.ctl td { padding:7px 10px; border-bottom:1px solid rgba(255,255,255,.08); } table.ctl td:first-child { color:var(--cyan); white-space:nowrap; } small { opacity:.65; }
+  #l-stages { list-style:none; padding:0; margin:14px 0; } #l-stages li { padding:5px 0 5px 4px; opacity:.45; display:flex; align-items:center; gap:10px; } #l-stages li.run { opacity:1; } #l-stages li.ok { opacity:.9; color:#7dff7d; } #l-stages li.err { opacity:1; color:#ff6b6b; }
+  .dot { width:10px; height:10px; border-radius:50%; background:#555; } li.run .dot { background:var(--gold); animation:p 1s infinite; } li.ok .dot { background:#7dff7d; } li.err .dot { background:#ff6b6b; } @keyframes p { 50% { opacity:.3 } }
+  .pbar { height:8px; background:rgba(255,255,255,.12); border-radius:4px; overflow:hidden; } .pbar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--pink),var(--gold)); transition:width .2s; } #l-msg { margin-top:10px; font-size:13px; opacity:.8; }
+  #l-err { margin-top:12px; padding:12px; border:1px solid #ff6b6b; border-radius:8px; background:rgba(120,0,0,.25); } #l-err pre { font-size:11px; opacity:.8; white-space:pre-wrap; }
+  /* HUD */
+  #hud-tl { position:absolute; left:24px; top:20px; width:250px; } .name { font-weight:700; letter-spacing:3px; font-size:13px; opacity:.85; margin-bottom:4px; text-shadow:0 1px 4px #000; }
+  .bar { position:relative; height:14px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.35); border-radius:8px; overflow:hidden; margin-bottom:6px; } .bar i { display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--pink),#ffa63d); transition:width .15s; } .bar.st { height:8px; } .bar.st i { background:#6fd36f; } .bar span { position:absolute; left:8px; top:-2px; font-size:11px; text-shadow:0 0 4px #000; }
+  #hud-tr { position:absolute; right:24px; top:18px; text-align:right; text-shadow:0 2px 6px #000; } #h-money { font-size:30px; font-weight:700; color:#8bf58b; } #h-stars { font-size:30px; letter-spacing:4px; } #h-stars b { color:rgba(255,255,255,.2); } #h-stars b.on { color:#ffd23f; text-shadow:0 0 10px #ff9800; } #h-stars b.dim { color:rgba(255,210,63,.3); } #h-dist { font-size:13px; opacity:.85; margin-top:2px; }
+  #hud-bl { position:absolute; left:20px; bottom:20px; width:220px; height:220px; } #h-mini { width:220px; height:220px; border-radius:50%; box-shadow:0 0 0 3px rgba(0,0,0,.5), 0 6px 24px rgba(0,0,0,.6); }
+  #h-arrow { position:absolute; right:-70px; bottom:6px; width:60px; flex-direction:column; align-items:center; display:none; } #h-arrow b { width:0; height:0; border-left:14px solid transparent; border-right:14px solid transparent; border-bottom:34px solid var(--gold); filter:drop-shadow(0 0 4px #000); } #h-arrow span { font-size:12px; margin-top:3px; text-shadow:0 0 4px #000; }
+  #hud-br { position:absolute; right:30px; bottom:26px; text-align:right; text-shadow:0 2px 8px #000; } #h-kmh { font-size:62px; font-weight:800; line-height:1; } #hud-br small { font-size:14px; margin-left:4px; } #h-gear { display:inline-block; margin-left:14px; font-size:28px; color:var(--cyan); font-weight:700; } .rpm, .veh { width:220px; height:7px; background:rgba(0,0,0,.5); border-radius:4px; margin:6px 0 0 auto; overflow:hidden; } .rpm i, .veh i { display:block; height:100%; width:0; } #h-flags { font-size:11px; opacity:.7; margin-top:4px; }
+  #hud-mission { position:absolute; right:24px; top:34%; max-width:300px; padding:12px 16px; background:rgba(10,12,22,.7); border-right:4px solid var(--gold); border-radius:6px; text-shadow:0 1px 4px #000; } #m-title { font-weight:700; color:var(--gold); letter-spacing:1px; } #m-obj { margin-top:4px; font-size:14px; } #m-timer { margin-top:4px; font-size:18px; color:var(--cyan); }
+  #h-prompt { position:absolute; left:50%; bottom:17%; transform:translateX(-50%); padding:9px 20px; background:rgba(10,12,22,.82); border:1px solid var(--cyan); border-radius:20px; font-size:17px; font-weight:600; } #h-toast { position:absolute; top:13%; left:50%; transform:translateX(-50%); padding:8px 18px; background:rgba(10,12,22,.8); border:1px solid var(--pink); border-radius:8px; opacity:0; transition:opacity .3s; max-width:80vw; text-align:center; }
+  #h-banner { position:absolute; top:26%; width:100%; text-align:center; text-shadow:0 3px 14px #000; } #h-banner h1 { margin:0; font-size:52px; letter-spacing:6px; color:var(--gold); } #h-banner p { margin:6px 0 0; font-size:20px; }
+  #h-weapon { position:absolute; right:30px; bottom:130px; font-size:17px; font-weight:700; text-shadow:0 2px 6px #000; } #h-cross { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:30px; color:#fff; text-shadow:0 0 4px #000; } #h-fps { position:absolute; left:50%; top:6px; transform:translateX(-50%); font:12px monospace; background:rgba(0,0,0,.55); padding:2px 8px; border-radius:4px; }
+  #h-vig { position:absolute; inset:0; box-shadow:inset 0 0 160px 40px rgba(220,0,0,.85); opacity:0; transition:opacity .35s; }
+  #bigmap { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); border:2px solid var(--cyan); border-radius:10px; z-index:15; background:#10151c; cursor:crosshair; box-shadow:0 0 60px rgba(0,0,0,.8); }
+  #debug { position:fixed; top:40px; right:10px; display:none; background:rgba(0,0,0,.6); padding:8px; border-radius:6px; font:12px/1.35 monospace; pointer-events:none; z-index:12; } #debug pre { margin:0 0 6px; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud"></div>
+<canvas id="bigmap" class="hide" width="900" height="900"></canvas>
+<div id="debug"></div>
+<div id="ui"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
